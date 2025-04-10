@@ -1,6 +1,5 @@
 import express from "express";
 const router = express.Router();
-import Product from "../models/product.model.js"; // adjust if needed
 
 // GET all products
 router.get("/", async (req, res) => {
