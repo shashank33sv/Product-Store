@@ -14,15 +14,15 @@ const __dirname = path.resolve();
 
 // Before routes
 app.use(cors({
-  origin: "https://your-frontend.onrender.com", // Or better: use your frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE"],
-}));
+	origin: "https://product-store-xnsk.onrender.com", // your frontend Render URL
+	credentials: true, // optional if you're using cookies/auth
+  }));
 
 
 // Middleware
 app.use(express.json());
 
-app.use(cors()); 
+
 
 // API routes
 app.use("/api/products", productRoutes);
