@@ -13,10 +13,14 @@ const PORT = process.env.PORT || 5000;
 const __dirname = path.resolve();
 
 // Enable CORS before routes
+import cors from "cors";
+
+// Before routes
 app.use(cors({
-	origin: "http://localhost:5173",
-	credentials: true,
+  origin: "*", // Or better: use your frontend URL
+  methods: ["GET", "POST", "PUT", "DELETE"],
 }));
+
 
 // Middleware
 app.use(express.json());
