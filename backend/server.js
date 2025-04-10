@@ -14,7 +14,7 @@ const __dirname = path.resolve();
 
 // Before routes
 app.use(cors({
-	origin: "https://product-store-xnsk.onrender.com", // your frontend Render URL
+	origin: "*", // your frontend Render URL
 	credentials: true, // optional if you're using cookies/auth
   }));
 
