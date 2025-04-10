@@ -12,9 +12,6 @@ const app = express(); // Initialize app AFTER dotenv
 const PORT = process.env.PORT || 5000;
 const __dirname = path.resolve();
 
-// Enable CORS before routes
-import cors from "cors";
-
 // Before routes
 app.use(cors({
   origin: "*", // Or better: use your frontend URL
