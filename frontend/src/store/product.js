@@ -1,87 +1,42 @@
-import { create } from "zustand";
+import express from "express";
+const router = express.Router();
+import Product from "../models/product.model.js"; // adjust if needed
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// GET all products
+router.get("/", async (req, res) => {
+  const products = await Product.find();
+  res.json({ success: true, data: products });
+});
 
+// POST create product
+router.post("/", async (req, res) => {
+  try {
+    const product = new Product(req.body);
+    await product.save();
+    res.status(201).json({ success: true, data: product });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
 
-export const useProductStore = create((set) => ({
-  products: [],
+// PUT update product
+router.put("/:id", async (req, res) => {
+  try {
+    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
 
-  setProducts: (products) => set({ products }),
+// DELETE product
+router.delete("/:id", async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Product deleted" });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
 
-  fetchProducts: async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/products`);
-      const data = await res.json();
-
-      if (data.success) {
-        set({ products: data.data });
-      } else {
-        console.error("Failed to fetch products:", data.message);
-      }
-    } catch (error) {
-      console.error("Network error:", error.message);
-    }
-  },
-
-  createProduct: async (newProduct) => {
-    if (!newProduct.name || !newProduct.image || !newProduct.price) {
-      return { success: false, message: "Please fill in all fields." };
-    }
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/products`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newProduct),
-      });
-      const data = await res.json();
-
-      if (!data.success) return { success: false, message: data.message };
-
-      set((state) => ({ products: [...state.products, data.data] }));
-      return { success: true, message: "Product created!" };
-    } catch (error) {
-      return { success: false, message: "Error creating product." };
-    }
-  },
-
-  deleteProduct: async (pid) => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/products/${pid}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-
-      if (!data.success) return { success: false, message: data.message };
-
-      set((state) => ({
-        products: state.products.filter((product) => product._id !== pid),
-      }));
-      return { success: true, message: data.message };
-    } catch (error) {
-      return { success: false, message: "Error deleting product." };
-    }
-  },
-
-  updateProduct: async (pid, updatedProduct) => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/products/${pid}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedProduct),
-      });
-      const data = await res.json();
-
-      if (!data.success) return { success: false, message: data.message };
-
-      set((state) => ({
-        products: state.products.map((product) =>
-          product._id === pid ? data.data : product
-        ),
-      }));
-      return { success: true, message: data.message };
-    } catch (error) {
-      return { success: false, message: "Error updating product." };
-    }
-  },
-}));
+export default router;
