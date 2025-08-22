@@ -1,63 +1,91 @@
 import mongoose from "mongoose";
 import Product from "../models/product.model.js";
+import asyncHandler from "express-async-handler";
 
-export const getProducts = async (req, res) => {
-	try {
-		const products = await Product.find({});
-		res.status(200).json({ success: true, data: products });
-	} catch (error) {
-		console.log("error in fetching products:", error.message);
-		res.status(500).json({ success: false, message: "Server Error" });
+// @desc    Fetch all products
+// @route   GET /api/products
+// @access  Public
+export const getProducts = asyncHandler(async (req, res) => {
+	const products = await Product.find({});
+	res.status(200).json({ data: products });
+});
+
+// @desc    Fetch single product
+// @route   GET /api/products/:id
+// @access  Public
+export const getProductById = asyncHandler(async (req, res) => {
+	const product = await Product.findById(req.params.id);
+	if (product) {
+		res.status(200).json({ data: product });
+	} else {
+		res.status(404);
+		throw new Error("Product not found");
 	}
-};
+});
 
-export const createProduct = async (req, res) => {
-	const product = req.body; // user will send this data
+// @desc    Get logged in user's products
+// @route   GET /api/products/myproducts
+// @access  Private
+export const getMyProducts = asyncHandler(async (req, res) => {
+	const products = await Product.find({ user: req.user._id });
+	res.status(200).json({ data: products });
+});
 
-	if (!product.name || !product.price || !product.image) {
-		return res.status(400).json({ success: false, message: "Please provide all fields" });
-	}
+// @desc    Create a new product
+// @route   POST /api/products
+// @access  Private
+export const createProduct = asyncHandler(async (req, res) => {
+	const product = new Product({
+		...req.body,
+		user: req.user._id, // Attach the logged-in user's ID
+	});
+	const savedProduct = await product.save();
+	res.status(201).json({ data: savedProduct });
+});
 
-	const newProduct = new Product(product);
-
-	try {
-		await newProduct.save();
-		res.status(201).json({ success: true, data: newProduct });
-	} catch (error) {
-		console.error("Error in Create product:", error.message);
-		res.status(500).json({ success: false, message: "Server Error" });
-	}
-};
-
-export const updateProduct = async (req, res) => {
+// @desc    Update a product
+// @route   PUT /api/products/:id
+// @access  Private
+export const updateProduct = asyncHandler(async (req, res) => {
 	const { id } = req.params;
+	const product = await Product.findById(id);
 
-	const product = req.body;
-
-	if (!mongoose.Types.ObjectId.isValid(id)) {
-		return res.status(404).json({ success: false, message: "Invalid Product Id" });
+	if (!product) {
+		res.status(404);
+		throw new Error("Product not found");
 	}
 
-	try {
-		const updatedProduct = await Product.findByIdAndUpdate(id, product, { new: true });
-		res.status(200).json({ success: true, data: updatedProduct });
-	} catch (error) {
-		res.status(500).json({ success: false, message: "Server Error" });
+	// Security check: Ensure the user owns the product
+	if (product.user.toString() !== req.user._id.toString()) {
+		res.status(401);
+		throw new Error("Not authorized");
 	}
-};
 
-export const deleteProduct = async (req, res) => {
+	const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {
+		new: true,
+		runValidators: true,
+	});
+	res.status(200).json({ data: updatedProduct });
+});
+
+// @desc    Delete a product
+// @route   DELETE /api/products/:id
+// @access  Private
+export const deleteProduct = asyncHandler(async (req, res) => {
 	const { id } = req.params;
+	const product = await Product.findById(id);
 
-	if (!mongoose.Types.ObjectId.isValid(id)) {
-		return res.status(404).json({ success: false, message: "Invalid Product Id" });
+	if (!product) {
+		res.status(404);
+		throw new Error("Product not found");
 	}
 
-	try {
-		await Product.findByIdAndDelete(id);
-		res.status(200).json({ success: true, message: "Product deleted" });
-	} catch (error) {
-		console.log("error in deleting product:", error.message);
-		res.status(500).json({ success: false, message: "Server Error" });
+	// Security check: Ensure the user owns the product
+	if (product.user.toString() !== req.user._id.toString()) {
+		res.status(401);
+		throw new Error("Not authorized");
 	}
-};
+
+	await Product.findByIdAndDelete(id);
+	res.status(200).json({ data: { message: "Product deleted successfully" } });
+});

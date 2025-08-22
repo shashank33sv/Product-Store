@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
 	{
+		// This is the new field to add
+		user: {
+			type: mongoose.Schema.Types.ObjectId,
+			required: true,
+			ref: "User", // Creates a reference to the User model
+		},
 		name: {
 			type: String,
 			required: true,
@@ -16,7 +22,7 @@ const productSchema = new mongoose.Schema(
 		},
 	},
 	{
-		timestamps: true, // createdAt, updatedAt
+		timestamps: true,
 	}
 );
 

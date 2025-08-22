@@ -21,7 +21,9 @@ import {
 	VStack,
 } from "@chakra-ui/react";
 import { useProductStore } from "../store/product";
+import useAuthStore from "../store/auth";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const ProductCard = ({ product }) => {
 	const [updatedProduct, setUpdatedProduct] = useState(product);
@@ -30,8 +32,13 @@ const ProductCard = ({ product }) => {
 	const bg = useColorModeValue("white", "gray.800");
 
 	const { deleteProduct, updateProduct } = useProductStore();
+	const { user } = useAuthStore();
+
 	const toast = useToast();
 	const { isOpen, onOpen, onClose } = useDisclosure();
+	const navigate = useNavigate(); // Initialize the navigate function
+
+	const isOwner = user?._id === product.user;
 
 	const handleDeleteProduct = async (pid) => {
 		const { success, message } = await deleteProduct(pid);
@@ -55,12 +62,12 @@ const ProductCard = ({ product }) => {
 	};
 
 	const handleUpdateProduct = async (pid, updatedProduct) => {
-		const { success, message } = await updateProduct(pid, updatedProduct);
+		const { success } = await updateProduct(pid, updatedProduct);
 		onClose();
 		if (!success) {
 			toast({
 				title: "Error",
-				description: message,
+				description: "Failed to update product.",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -74,6 +81,12 @@ const ProductCard = ({ product }) => {
 				isClosable: true,
 			});
 		}
+	};
+
+	// --- THIS FUNCTION IS NOW UPDATED ---
+	const handleBuyNow = () => {
+		// Navigate to the checkout page with the product's ID
+		navigate(`/checkout/${product._id}`);
 	};
 
 	return (
@@ -97,18 +110,27 @@ const ProductCard = ({ product }) => {
 				</Text>
 
 				<HStack spacing={2}>
-					<IconButton icon={<EditIcon />} onClick={onOpen} colorScheme='blue' />
-					<IconButton
-						icon={<DeleteIcon />}
-						onClick={() => handleDeleteProduct(product._id)}
-						colorScheme='red'
-					/>
+					{user && isOwner && (
+						<>
+							<IconButton icon={<EditIcon />} onClick={onOpen} colorScheme='blue' />
+							<IconButton
+								icon={<DeleteIcon />}
+								onClick={() => handleDeleteProduct(product._id)}
+								colorScheme='red'
+							/>
+						</>
+					)}
+
+					{user && !isOwner && (
+						<Button colorScheme='green' onClick={handleBuyNow} w={"full"}>
+							Buy Now
+						</Button>
+					)}
 				</HStack>
 			</Box>
 
 			<Modal isOpen={isOpen} onClose={onClose}>
 				<ModalOverlay />
-
 				<ModalContent>
 					<ModalHeader>Update Product</ModalHeader>
 					<ModalCloseButton />
@@ -135,7 +157,6 @@ const ProductCard = ({ product }) => {
 							/>
 						</VStack>
 					</ModalBody>
-
 					<ModalFooter>
 						<Button
 							colorScheme='blue'
